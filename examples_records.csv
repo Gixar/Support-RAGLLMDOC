@@ -1,0 +1,8 @@
+type,id,client_name,tool,environment,severity,status,summary,steps_to_reproduce,solution,tags,language,created_at,updated_at,source_url
+Incident,INC-1001,Acme Corp,PagerDuty,prod,P1,Resolved,Auth service returns 500 for login attempts,"1. POST /login with valid credentials
+2. Observe 500 response with error code EAUTH-17
+3. Logs show DB connection timeouts",Increased DB pool size from 20→60 and redeployed auth-service v1.4.2. Added circuit breaker with 2s timeout.,auth|database|api,en,2025-11-06T15:47:19.076148Z,2025-11-06T15:47:19.076170Z,
+Case,CASE-778,Globex,Zendesk,staging,,Investigating,Webhook retries not respecting backoff setting,"1. Configure retry policy
+2. Fire webhook
+3. Intervals are ~5s instead of exponential backoff",Pending verification in staging with feature flag off.,webhooks|retries,en,2025-11-06T15:47:19.076175Z,2025-11-06T15:47:19.076177Z,
+Task,TASK-42,Initech,Internal,dev,,Open,Agregar métricas de latencia a /healthz,—,—,observability|metrics,es,2025-11-06T15:47:19.076181Z,2025-11-06T15:47:19.076183Z,https://example.com/spec

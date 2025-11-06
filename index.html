@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LLM Support Pack Builder</title>
+  <style>
+    /* ========== Base / Reset ========== */
+    :root{
+      --bg:#f7f7fb;
+      --card:#ffffff;
+      --ink:#1e1e24;
+      --muted:#6b7280;
+      --primary:#2f6fed;
+      --accent:#0ea5e9;
+      --ring: rgba(47,111,237,0.35);
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --danger:#dc2626;
+      --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 3px 8px rgba(0,0,0,0.08);
+      --radius:16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; padding:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--ink); background:var(--bg);
+    }
+    a{ color:var(--primary); text-decoration:none; }
+    h1,h2,h3{ margin:0 0 .5rem 0; }
+    .container{
+      max-width:1200px; margin:24px auto; padding:0 16px;
+      display:grid; gap:16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 1024px){
+      .container{
+        grid-template-columns: 420px 1fr;
+        align-items:start;
+      }
+    }
+    .card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .titlebar{
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      margin-bottom:8px;
+    }
+    .titlebar h1{ font-size:1.25rem; font-weight:700; }
+    .muted{ color:var(--muted); font-size:.9rem; }
+    .row{ display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
+    .row-3{ display:grid; gap:10px; grid-template-columns: repeat(3, 1fr); }
+    .row-4{ display:grid; gap:10px; grid-template-columns: repeat(4, 1fr); }
+    .full{ grid-column: 1 / -1; }
+    label{ display:block; font-size:.85rem; color:var(--muted); margin-bottom:6px; }
+    input[type="text"], input[type="datetime-local"], textarea, select{
+      width:100%; border:1px solid #e5e7eb; background:#fff;
+      border-radius:12px; padding:10px 12px; font-size:.95rem; outline:none;
+    }
+    textarea{ min-height:84px; resize:vertical; }
+    input:focus, textarea:focus, select:focus{
+      border-color:var(--primary); box-shadow:0 0 0 3px var(--ring);
+    }
+    .buttons{ display:flex; flex-wrap:wrap; gap:8px; }
+    button{
+      border:0; border-radius:12px; padding:10px 14px; cursor:pointer;
+      background:var(--primary); color:#fff; font-weight:600; box-shadow:var(--shadow);
+    }
+    button.secondary{ background:#111827; }
+    button.ghost{ background:#e5e7eb; color:#111827; }
+    button.ok{ background:var(--ok); }
+    button.warn{ background:var(--warn); }
+    button.danger{ background:var(--danger); }
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .table-wrap{ overflow:auto; border-radius:12px; border:1px solid #e5e7eb; }
+    table{ width:100%; border-collapse:collapse; font-size:.92rem; }
+    th, td{ padding:10px 12px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+    th{ text-align:left; background:#f3f4f6; position:sticky; top:0; }
+    tr:hover td{ background:#fafafa; }
+    .pill{ display:inline-block; background:#eef2ff; color:#3730a3; border-radius:999px; padding:2px 8px; font-size:.75rem; margin-right:6px; }
+    details{ border:1px dashed #e5e7eb; border-radius:12px; padding:10px; }
+    summary{ cursor:pointer; font-weight:600; }
+    .footer{ text-align:center; color:var(--muted); font-size:.85rem; margin:8px 0; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .badge{ font-size:.75rem; background:#e5e7eb; border-radius:999px; padding:2px 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ========== Left Column: Form ========== -->
+    <section class="card" aria-labelledby="form-title">
+      <div class="titlebar">
+        <h1 id="form-title">LLM Support Pack Builder</h1>
+        <span class="badge">Offline</span>
+      </div>
+      <p class="muted">Add Incidents, Cases, or Tasks and export to JSONL, CSV, or Markdown. All processing runs locally in your browser.</p>
+
+      <!-- Record form -->
+      <form id="record-form">
+        <div class="row">
+          <div>
+            <label for="type">Type</label>
+            <select id="type" required>
+              <option>Incident</option>
+              <option>Case</option>
+              <option>Task</option>
+            </select>
+          </div>
+          <div>
+            <label for="id">ID (optional)</label>
+            <input type="text" id="id" placeholder="ABC-1234"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="client_name">Client Name</label>
+            <input type="text" id="client_name" required placeholder="Acme Corp"/>
+          </div>
+          <div>
+            <label for="tool">Tool</label>
+            <input type="text" id="tool" placeholder="Zendesk / PagerDuty / Internal"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="environment">Environment</label>
+            <input type="text" id="environment" placeholder="prod / staging / dev"/>
+          </div>
+          <div>
+            <label for="severity">Severity (optional)</label>
+            <input type="text" id="severity" placeholder="P0 / P1 / P2"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="status">Status (optional)</label>
+            <input type="text" id="status" placeholder="Open / Investigating / Resolved"/>
+          </div>
+          <div>
+            <label for="language">Language</label>
+            <input type="text" id="language" value="en" placeholder="en / es"/>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="summary">Summary <span class="muted">(required)</span></label>
+          <textarea id="summary" required placeholder="One-line overview of the issue and impact"></textarea>
+        </div>
+
+        <div class="full">
+          <label for="steps_to_reproduce">Steps to Reproduce</label>
+          <textarea id="steps_to_reproduce" placeholder="Numbered steps, logs, contextual notes"></textarea>
+        </div>
+
+        <div class="full">
+          <label for="solution">Solution</label>
+          <textarea id="solution" placeholder="Fix, workaround, or next steps"></textarea>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="tags">Tags (comma-separated)</label>
+            <input type="text" id="tags" placeholder="auth, api, database"/>
+          </div>
+          <div>
+            <label for="source_url">Source URL (optional)</label>
+            <input type="text" id="source_url" placeholder="https://..."/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="created_at">Created At (ISO)</label>
+            <input type="datetime-local" id="created_at"/>
+          </div>
+          <div>
+            <label for="updated_at">Updated At (ISO)</label>
+            <input type="datetime-local" id="updated_at"/>
+          </div>
+        </div>
+
+        <details class="full" open>
+          <summary>Advanced Options: RAG Chunking</summary>
+          <div class="row">
+            <div>
+              <label for="maxChars">Max characters per chunk</label>
+              <input type="text" id="maxChars" value="800"/>
+            </div>
+            <div>
+              <label for="overlap">Overlap (characters)</label>
+              <input type="text" id="overlap" value="120"/>
+            </div>
+          </div>
+        </details>
+
+        <div class="buttons toolbar">
+          <button type="submit" class="ok" id="btn-add">Add / Update Record</button>
+          <button type="button" class="ghost" id="btn-clear">Clear Form</button>
+          <button type="button" class="secondary" id="btn-load-demo">Load Example Data</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========== Right Column: Records / Exports ========== -->
+    <section class="card" aria-labelledby="records-title">
+      <div class="titlebar">
+        <h2 id="records-title">Records</h2>
+        <span class="muted" id="count">0 items</span>
+      </div>
+
+      <!-- Filters -->
+      <div class="toolbar">
+        <input type="text" id="filter_client" placeholder="Filter: client"/>
+        <input type="text" id="filter_tool" placeholder="Filter: tool"/>
+        <input type="text" id="filter_env" placeholder="Filter: environment"/>
+        <input type="text" id="filter_id" placeholder="Filter: id"/>
+        <input type="text" id="filter_tags" placeholder="Filter: tags"/>
+        <input type="text" id="filter_summary" placeholder="Filter: summary"/>
+        <button type="button" class="ghost" id="btn-clear-filters">Clear Filters</button>
+      </div>
+
+      <div class="buttons" style="margin:8px 0 12px 0;">
+        <button type="button" id="export-jsonl">Export JSONL (records)</button>
+        <button type="button" id="export-jsonl-chunks">Export JSONL (chunks)</button>
+        <button type="button" id="export-csv">Export CSV</button>
+        <button type="button" id="export-md">Export Markdown</button>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Stored records" tabindex="0">
+        <table id="table">
+          <thead>
+            <tr>
+              <th style="min-width:120px;">Type</th>
+              <th style="min-width:120px;">Client</th>
+              <th style="min-width:120px;">Tool</th>
+              <th style="min-width:120px;">Env</th>
+              <th style="min-width:160px;">Summary</th>
+              <th style="min-width:100px;">ID</th>
+              <th style="min-width:120px;">Tags</th>
+              <th style="min-width:140px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <p class="footer">No data leaves your browser. Exported files download locally.</p>
+    </section>
+  </div>
+
+  <script>
+    // ================= Utility: ID and Dates =================
+    function uid(){
+      return 'rec_' + Math.random().toString(36).slice(2,10);
+    }
+    function nowISO(){
+      return new Date().toISOString();
+    }
+    function toISOFromLocalInput(value){
+      if(!value) return null;
+      // Convert local datetime-local value to ISO string
+      const dt = new Date(value);
+      return isNaN(dt.getTime()) ? null : dt.toISOString();
+    }
+
+    // ================= In-Memory Store =================
+    const store = {
+      records: [],            // array of normalized records
+      editingIndex: null      // index of the record being edited, or null
+    };
+
+    // ================= Schema & Normalization =================
+    function recordToJSON(raw){
+      // Normalize and compute derived 'text' field
+      const created = raw.created_at || nowISO();
+      const updated = raw.updated_at || created;
+      const id = raw.id && raw.id.trim() ? raw.id.trim() : uid();
+
+      const summary = (raw.summary || '').trim();
+      const steps = (raw.steps_to_reproduce || '').trim();
+      const solution = (raw.solution || '').trim();
+
+      const text = [summary, steps, solution]
+        .filter(Boolean)
+        .join('\\n\\n');
+
+      const tagsArr = (raw.tags || '')
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+
+      return {
+        type: raw.type || 'Incident',
+        id,
+        client_name: raw.client_name || '',
+        tool: raw.tool || '',
+        environment: raw.environment || '',
+        severity: raw.severity || null,
+        status: raw.status || null,
+        summary,
+        steps_to_reproduce: steps,
+        solution,
+        tags: tagsArr,
+        language: raw.language || 'en',
+        created_at: created,
+        updated_at: updated,
+        source_url: raw.source_url || null,
+        text
+      };
+    }
+
+    // ================= Chunking =================
+    function chunkText(text, maxChars=800, overlap=120){
+      const chunks = [];
+      if(!text){ return chunks; }
+      maxChars = Math.max(1, parseInt(maxChars,10) || 800);
+      overlap = Math.max(0, parseInt(overlap,10) || 120);
+      let start = 0;
+      while(start < text.length){
+        const end = Math.min(text.length, start + maxChars);
+        const segment = text.slice(start, end);
+        chunks.push({ start, end, segment });
+        if(end === text.length){ break; }
+        start = end - overlap;
+        if(start < 0) start = 0;
+      }
+      return chunks;
+    }
+
+    // ================= Serialization =================
+    function toJSONL(arr){
+      return arr.map(o => JSON.stringify(o)).join('\\n');
+    }
+
+    function recordToMarkdown(rec){
+      const yaml = [
+        '---',
+        `type: "${rec.type}"`,
+        `id: "${rec.id}"`,
+        `client_name: "${rec.client_name}"`,
+        `tool: "${rec.tool}"`,
+        `environment: "${rec.environment}"`,
+        `severity: ${rec.severity? '"'+rec.severity+'"' : 'null'}`,
+        `status: ${rec.status? '"'+rec.status+'"' : 'null'}`,
+        `tags: [${rec.tags.map(t => '"'+t.replace(/"/g,'\\"')+'"').join(', ')}]`,
+        `language: "${rec.language}"`,
+        `created_at: "${rec.created_at}"`,
+        `updated_at: "${rec.updated_at}"`,
+        `source_url: ${rec.source_url? '"'+rec.source_url+'"' : 'null'}`,
+        '---'
+      ].join('\\n');
+
+      const body = [
+        '',
+        '## Summary',
+        rec.summary || '',
+        '',
+        '## Steps to Reproduce',
+        rec.steps_to_reproduce || '',
+        '',
+        '## Solution',
+        rec.solution || ''
+      ].join('\\n');
+
+      return yaml + body + '\\n';
+    }
+
+    // ================= Download Helpers =================
+    function download(filename, content, mime='text/plain'){
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    // ================= UI Bindings =================
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function readForm(){
+      return {
+        type: $('#type').value,
+        id: $('#id').value,
+        client_name: $('#client_name').value,
+        tool: $('#tool').value,
+        environment: $('#environment').value,
+        severity: $('#severity').value,
+        status: $('#status').value,
+        summary: $('#summary').value,
+        steps_to_reproduce: $('#steps_to_reproduce').value,
+        solution: $('#solution').value,
+        tags: $('#tags').value,
+        language: $('#language').value || 'en',
+        created_at: toISOFromLocalInput($('#created_at').value) || null,
+        updated_at: toISOFromLocalInput($('#updated_at').value) || null,
+        source_url: $('#source_url').value
+      };
+    }
+
+    function writeForm(rec){
+      $('#type').value = rec.type || 'Incident';
+      $('#id').value = rec.id || '';
+      $('#client_name').value = rec.client_name || '';
+      $('#tool').value = rec.tool || '';
+      $('#environment').value = rec.environment || '';
+      $('#severity').value = rec.severity || '';
+      $('#status').value = rec.status || '';
+      $('#summary').value = rec.summary || '';
+      $('#steps_to_reproduce').value = rec.steps_to_reproduce || '';
+      $('#solution').value = rec.solution || '';
+      $('#tags').value = (rec.tags || []).join(', ');
+      $('#language').value = rec.language || 'en';
+      $('#created_at').value = rec.created_at ? new Date(rec.created_at).toISOString().slice(0,16) : '';
+      $('#updated_at').value = rec.updated_at ? new Date(rec.updated_at).toISOString().slice(0,16) : '';
+      $('#source_url').value = rec.source_url || '';
+    }
+
+    function clearForm(){
+      writeForm({
+        type:'Incident', id:'', client_name:'', tool:'', environment:'', severity:'', status:'',
+        summary:'', steps_to_reproduce:'', solution:'', tags:[], language:'en', created_at:'', updated_at:'', source_url:''
+      });
+      store.editingIndex = null;
+      $('#btn-add').textContent = 'Add / Update Record';
+    }
+
+    function render(){
+      const tbody = $('#tbody');
+      tbody.innerHTML = '';
+      const filters = {
+        client: $('#filter_client').value.trim().toLowerCase(),
+        tool: $('#filter_tool').value.trim().toLowerCase(),
+        env: $('#filter_env').value.trim().toLowerCase(),
+        id: $('#filter_id').value.trim().toLowerCase(),
+        tags: $('#filter_tags').value.trim().toLowerCase(),
+        summary: $('#filter_summary').value.trim().toLowerCase()
+      };
+
+      const matches = r => {
+        const t = s => (s||'').toString().toLowerCase();
+        const has = (hay, needle) => !needle || t(hay).includes(needle);
+        const tagsJoin = (r.tags || []).join(',');
+        return has(r.client_name, filters.client)
+          && has(r.tool, filters.tool)
+          && has(r.environment, filters.env)
+          && has(r.id, filters.id)
+          && has(tagsJoin, filters.tags)
+          && has(r.summary, filters.summary);
+      };
+
+      const rows = store.records.filter(matches);
+      $('#count').textContent = rows.length + ' items';
+
+      for(const [i, r] of rows.entries()){
+        const tr = document.createElement('tr');
+
+        const tdType = document.createElement('td'); tdType.textContent = r.type; tr.appendChild(tdType);
+        const tdClient = document.createElement('td'); tdClient.textContent = r.client_name; tr.appendChild(tdClient);
+        const tdTool = document.createElement('td'); tdTool.textContent = r.tool; tr.appendChild(tdTool);
+        const tdEnv = document.createElement('td'); tdEnv.textContent = r.environment; tr.appendChild(tdEnv);
+        const tdSummary = document.createElement('td'); tdSummary.textContent = r.summary.slice(0,160); tr.appendChild(tdSummary);
+        const tdId = document.createElement('td'); tdId.textContent = r.id; tr.appendChild(tdId);
+        const tdTags = document.createElement('td');
+        (r.tags || []).forEach(t => {
+          const span = document.createElement('span'); span.className = 'pill'; span.textContent = t; tdTags.appendChild(span);
+        });
+        tr.appendChild(tdTags);
+
+        const tdAct = document.createElement('td');
+        const editBtn = document.createElement('button'); editBtn.className='ghost'; editBtn.textContent='Edit';
+        const delBtn = document.createElement('button'); delBtn.className='danger'; delBtn.style.marginLeft='6px'; delBtn.textContent='Delete';
+        editBtn.addEventListener('click', () => {
+          store.editingIndex = store.records.indexOf(r);
+          writeForm(r);
+          $('#btn-add').textContent = 'Update Record';
+          window.scrollTo({ top:0, behavior:'smooth' });
+        });
+        delBtn.addEventListener('click', () => {
+          if(confirm('Delete this record?')){
+            store.records = store.records.filter(x => x !== r);
+            render();
+          }
+        });
+        tdAct.appendChild(editBtn); tdAct.appendChild(delBtn);
+        tr.appendChild(tdAct);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    // ================= Exports =================
+    function exportJSONLRecords(){
+      const content = toJSONL(store.records);
+      download('records.jsonl', content, 'application/json');
+    }
+
+    function exportJSONLChunks(){
+      const maxChars = $('#maxChars').value || '800';
+      const overlap = $('#overlap').value || '120';
+      const out = [];
+      for(const rec of store.records){
+        const parts = chunkText(rec.text, parseInt(maxChars,10), parseInt(overlap,10));
+        const total = parts.length || 0;
+        parts.forEach((p, idx) => {
+          out.push({
+            record_id: rec.id,
+            chunk_index: idx,
+            total_chunks: total,
+            start: p.start, end: p.end,
+            segment: p.segment,
+            type: rec.type, client_name: rec.client_name, tool: rec.tool, environment: rec.environment,
+            severity: rec.severity, status: rec.status, tags: rec.tags, language: rec.language,
+            created_at: rec.created_at, updated_at: rec.updated_at, source_url: rec.source_url
+          });
+        });
+      }
+      download('chunks.jsonl', toJSONL(out), 'application/json');
+    }
+
+    function exportCSV(){
+      // Flatten to rows
+      const cols = ['type','id','client_name','tool','environment','severity','status','summary','steps_to_reproduce','solution','tags','language','created_at','updated_at','source_url'];
+      const lines = [cols.join(',')];
+      for(const r of store.records){
+        const row = [
+          r.type, r.id, r.client_name, r.tool, r.environment, r.severity||'', r.status||'',
+          r.summary.replace(/"/g,'""'),
+          r.steps_to_reproduce.replace(/"/g,'""'),
+          r.solution.replace(/"/g,'""'),
+          (r.tags||[]).join('|').replace(/"/g,'""'),
+          r.language, r.created_at, r.updated_at, r.source_url||''
+        ].map(v => `"${(v??'')}"`);
+        lines.push(row.join(','));
+      }
+      download('records.csv', lines.join('\\n'), 'text/csv');
+    }
+
+    function exportMarkdown(){
+      const md = store.records.map(recordToMarkdown).join('\\n\\n---\\n\\n');
+      download('records.md', md, 'text/markdown');
+    }
+
+    // ================= Demo Data =================
+    function loadDemoData(){
+      const demo = [
+        {
+          type:'Incident', id:'INC-1001', client_name:'Acme Corp', tool:'PagerDuty', environment:'prod',
+          severity:'P1', status:'Resolved', language:'en',
+          summary:'Auth service returns 500 for login attempts',
+          steps_to_reproduce:'1. POST /login with valid credentials\n2. Observe 500 response with error code EAUTH-17\n3. Logs show DB connection timeouts',
+          solution:'Increased DB pool size from 20→60 and redeployed auth-service v1.4.2. Added circuit breaker with 2s timeout.',
+          tags:['auth','database','api'],
+          created_at: nowISO(), updated_at: nowISO(), source_url:null
+        },
+        {
+          type:'Case', id:'CASE-778', client_name:'Globex', tool:'Zendesk', environment:'staging',
+          severity:null, status:'Investigating', language:'en',
+          summary:'Webhook retries not respecting backoff setting',
+          steps_to_reproduce:'1. Configure retry policy\n2. Fire webhook\n3. Intervals are ~5s instead of exponential backoff',
+          solution:'Pending verification in staging with feature flag off.',
+          tags:['webhooks','retries'], created_at: nowISO(), updated_at: nowISO(), source_url:null
+        },
+        {
+          type:'Task', id:'TASK-42', client_name:'Initech', tool:'Internal', environment:'dev',
+          severity:null, status:'Open', language:'es',
+          summary:'Agregar métricas de latencia a /healthz',
+          steps_to_reproduce:'—',
+          solution:'—',
+          tags:['observability','metrics'], created_at: nowISO(), updated_at: nowISO(), source_url:'https://example.com/spec'
+        }
+      ];
+      store.records = demo.map(recordToJSON);
+      render();
+    }
+
+    // ================= Event Listeners =================
+    document.getElementById('record-form').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const raw = readForm();
+      const normalized = recordToJSON(raw);
+      if(store.editingIndex == null){
+        store.records.unshift(normalized);
+      } else {
+        store.records[store.editingIndex] = normalized;
+        store.editingIndex = null;
+        document.getElementById('btn-add').textContent = 'Add / Update Record';
+      }
+      clearForm();
+      render();
+    });
+    document.getElementById('btn-clear').addEventListener('click', clearForm);
+    document.getElementById('btn-load-demo').addEventListener('click', loadDemoData);
+
+    document.getElementById('export-jsonl').addEventListener('click', exportJSONLRecords);
+    document.getElementById('export-jsonl-chunks').addEventListener('click', exportJSONLChunks);
+    document.getElementById('export-csv').addEventListener('click', exportCSV);
+    document.getElementById('export-md').addEventListener('click', exportMarkdown);
+
+    $$('#filter_client,#filter_tool,#filter_env,#filter_id,#filter_tags,#filter_summary').forEach(el=>{
+      el.addEventListener('input', render);
+    });
+    document.getElementById('btn-clear-filters').addEventListener('click', () => {
+      $$('#filter_client,#filter_tool,#filter_env,#filter_id,#filter_tags,#filter_summary').forEach(el=> el.value='');
+      render();
+    });
+
+    // Initialize
+    render();
+  </script>
+</body>
+</html>
