@@ -28,17 +28,18 @@
     }
     a{ color:var(--primary); text-decoration:none; }
     h1,h2,h3{ margin:0 0 .5rem 0; }
+
+    /*
+      CHANGE: force a single column at all sizes so the Builder sits ABOVE Records.
+      If you later want two columns on desktop but keep Builder above Records,
+      you can set grid-template-areas and assign areas to sections.
+    */
     .container{
       max-width:1200px; margin:24px auto; padding:0 16px;
       display:grid; gap:16px;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr; /* single column */
     }
-    @media (min-width: 1024px){
-      .container{
-        grid-template-columns: 420px 1fr;
-        align-items:start;
-      }
-    }
+
     .card{
       background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
       padding:16px;
@@ -88,7 +89,7 @@
 </head>
 <body>
   <div class="container">
-    <!-- ========== Left Column: Form ========== -->
+    <!-- ========== Builder at TOP ========== -->
     <section class="card" aria-labelledby="form-title">
       <div class="titlebar">
         <h1 id="form-title">LLM Support Pack Builder</h1>
@@ -205,7 +206,7 @@
       </form>
     </section>
 
-    <!-- ========== Right Column: Records / Exports ========== -->
+    <!-- ========== Records BELOW the Builder ========== -->
     <section class="card" aria-labelledby="records-title">
       <div class="titlebar">
         <h2 id="records-title">Records</h2>
@@ -286,7 +287,7 @@
 
       const text = [summary, steps, solution]
         .filter(Boolean)
-        .join('\\n\\n');
+        .join('\n\n');
 
       const tagsArr = (raw.tags || '')
         .split(',')
@@ -333,7 +334,7 @@
 
     // ================= Serialization =================
     function toJSONL(arr){
-      return arr.map(o => JSON.stringify(o)).join('\\n');
+      return arr.map(o => JSON.stringify(o)).join('\n');
     }
 
     function recordToMarkdown(rec){
@@ -352,7 +353,7 @@
         `updated_at: "${rec.updated_at}"`,
         `source_url: ${rec.source_url? '"'+rec.source_url+'"' : 'null'}`,
         '---'
-      ].join('\\n');
+      ].join('\n');
 
       const body = [
         '',
@@ -364,9 +365,9 @@
         '',
         '## Solution',
         rec.solution || ''
-      ].join('\\n');
+      ].join('\n');
 
-      return yaml + body + '\\n';
+      return yaml + body + '\n';
     }
 
     // ================= Download Helpers =================
@@ -458,7 +459,7 @@
       const rows = store.records.filter(matches);
       $('#count').textContent = rows.length + ' items';
 
-      for(const [i, r] of rows.entries()){
+      for(const r of rows){
         const tr = document.createElement('tr');
 
         const tdType = document.createElement('td'); tdType.textContent = r.type; tr.appendChild(tdType);
@@ -539,11 +540,11 @@
         ].map(v => `"${(v??'')}"`);
         lines.push(row.join(','));
       }
-      download('records.csv', lines.join('\\n'), 'text/csv');
+      download('records.csv', lines.join('\n'), 'text/csv');
     }
 
     function exportMarkdown(){
-      const md = store.records.map(recordToMarkdown).join('\\n\\n---\\n\\n');
+      const md = store.records.map(recordToMarkdown).join('\n\n---\n\n');
       download('records.md', md, 'text/markdown');
     }
 
